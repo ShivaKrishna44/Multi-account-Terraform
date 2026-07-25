@@ -1,0 +1,148 @@
+name: Org Management - Organization/Accounts/SCPs
+
+on:
+  pull_request:
+    paths: ['enterprise/org/**']
+  push:
+    branches: [main]
+    paths: ['enterprise/org/**']
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: '1.6.0'
+
+permissions:
+  id-token: write    # OIDC
+  contents: read
+  pull-requests: write  # Post plan as PR comment
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      organization: ${{ steps.changes.outputs.organization }}
+      accounts: ${{ steps.changes.outputs.accounts }}
+      iam: ${{ steps.changes.outputs.iam }}
+      security: ${{ steps.changes.outputs.security }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            organization:
+              - 'enterprise/org/organization/**'
+            accounts:
+              - 'enterprise/org/accounts/**'
+            iam:
+              - 'enterprise/org/iam/**'
+            security:
+              - 'enterprise/org/security/**'
+
+  # ─── Organization + OUs + SCPs ───
+  organization:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.organization == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: enterprise/org/organization
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS (OIDC - Management Account)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.MGMT_ACCOUNT_ID }}:role/github-actions-org-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - run: terraform init
+      - run: terraform plan -no-color -out=tfplan
+        id: plan
+
+      - name: Post Plan to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `#### 🏢 Organization Plan
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+      - name: Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan
+
+  # ─── Accounts ───
+  accounts:
+    needs: [detect-changes, organization]
+    if: always() && needs.detect-changes.outputs.accounts == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: enterprise/org/accounts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.MGMT_ACCOUNT_ID }}:role/github-actions-org-role
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -no-color -out=tfplan
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+
+  # ─── IAM Cross-Account Roles ───
+  iam:
+    needs: [detect-changes, accounts]
+    if: always() && needs.detect-changes.outputs.iam == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: enterprise/org/iam
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.MGMT_ACCOUNT_ID }}:role/github-actions-org-role
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -no-color -out=tfplan
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
+
+  # ─── Security (CloudTrail + GuardDuty) ───
+  security:
+    needs: [detect-changes, iam]
+    if: always() && needs.detect-changes.outputs.security == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: enterprise/org/security
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.MGMT_ACCOUNT_ID }}:role/github-actions-org-role
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -no-color -out=tfplan
+      - name: Apply
+        if: github.ref == 'refs/heads/main'
+        run: terraform apply -auto-approve tfplan
