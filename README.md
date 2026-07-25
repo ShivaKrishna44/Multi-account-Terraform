@@ -186,6 +186,6 @@ After first deploy, all changes go through PR → pipeline → auto-apply.
 
 ---
 
-## Interview Answer (30 seconds)
+## Summary
 
 > "We have a single Terraform repo with two layers. Layer 1 is organization governance — OUs, SCPs, cross-account roles, CloudTrail — applied via a pipeline to the management account. Layer 2 is infrastructure per account — VPC, EKS, databases — using shared modules with per-environment tfvars. Each environment has its own pipeline that assumes a role into that specific account via OIDC. Nobody runs apply manually. PR creates a plan, team reviews, merge triggers apply. State is in S3 with DynamoDB locking."
