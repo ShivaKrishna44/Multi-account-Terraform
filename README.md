@@ -9,13 +9,13 @@ Sets up a production-grade AWS multi-account environment with governance, securi
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│              AWS Organizations (Management Account)        │
-│                                                            │
+┌──────────────────────────────────────────────────────── ──┐
+│              AWS Organizations (Management Account)       │
+│                                                           │
 │  ┌──────────────────────────────────────────────────────┐ │
-│  │                    Root (r-vhrn)                       │ │
-│  │       SCP: protect-security-services (attached here)  │ │
-│  │                                                        │ │
+│  │                    Root (r-vhrn)                     │ │
+│  │       SCP: protect-security-services (attached here) │ │
+│  │                                                      │ │
 │  │  ┌───────────┐  ┌──────────────┐  ┌──────────────┐   │ │
 │  │  │ OU:       │  │ OU:          │  │ OU:          │   │ │
 │  │  │ Security  │  │ Workloads-US │  │ Workloads-EU │   │ │
@@ -27,17 +27,17 @@ Sets up a production-grade AWS multi-account environment with governance, securi
 │  │  │           │  │ ├─ prod-us   │  │ ├─ prod-eu   │   │ │
 │  │  │           │  │ └─ dev-us    │  │ └─ dev-eu    │   │ │
 │  │  └───────────┘  └──────────────┘  └──────────────┘   │ │
-│  │                                                        │ │
-│  │  ┌───────────┐                                        │ │
-│  │  │ OU:       │                                        │ │
-│  │  │ Sandbox   │                                        │ │
-│  │  │           │                                        │ │
-│  │  │ SCP: deny │                                        │ │
-│  │  │ expensive │                                        │ │
-│  │  │ services  │                                        │ │
-│  │  └───────────┘                                        │ │
+│  │                                                      │ │
+│  │  ┌───────────┐                                       │ │
+│  │  │ OU:       │                                       │ │
+│  │  │ Sandbox   │                                       │ │
+│  │  │           │                                       │ │
+│  │  │ SCP: deny │                                       │ │
+│  │  │ expensive │                                       │ │
+│  │  │ services  │                                       │ │
+│  │  └───────────┘                                       │ │
 │  └──────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────── ─┘
 ```
 
 ---
