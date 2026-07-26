@@ -7,19 +7,19 @@ Single repo. Two layers. All applied via CI/CD pipeline. No manual terraform app
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
+┌────────────────────────────────────────────────────────  ──┐
 │              AWS Organizations (Management Account)        │
 │                                                            │
 │  Root (SCP: protect CloudTrail/GuardDuty — nobody can disable)
 │  │                                                         │
 │  ├── OU: Security        → security account (audit/logs)   │
-│  ├── OU: Workloads-US    → SCP: only us-east-1, us-west-2 │
-│  │   ├── prod-us         → VPC + EKS (t3.large, 3 nodes)  │
-│  │   └── dev-us          → VPC + EKS (t3.medium, 2 nodes) │
+│  ├── OU: Workloads-US    → SCP: only us-east-1, us-west-2  │
+│  │   ├── prod-us         → VPC + EKS (t3.large, 3 nodes)   │
+│  │   └── dev-us          → VPC + EKS (t3.medium, 2 nodes)  │ 
 │  ├── OU: Workloads-EU    → SCP: only eu-west-1, eu-central-1
-│  │   └── prod-eu         → VPC + EKS (t3.large, 3 nodes)  │
+│  │   └── prod-eu         → VPC + EKS (t3.large, 3 nodes)   │
 │  └── OU: Sandbox         → SCP: no expensive services      │
-└──────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────  ┘
 ```
 
 ---
